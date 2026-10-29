@@ -1,0 +1,42 @@
+name: kaneo-global
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+services:
+  postgres:
+    image: postgres:16-alpine
+    env_file: /opt/configs/kaneo/production.env
+    volumes:
+      - /opt/data/kaneo/postgres:/var/lib/postgresql/data
+    networks: [internal]
+    restart: unless-stopped
+    mem_limit: 384m
+    logging: *logging
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kaneo -d kaneo"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+  kaneo:
+    image: ${KANEO_IMAGE:?Set fork image tag}
+    env_file: /opt/configs/kaneo/production.env
+    volumes:
+      - /opt/data/kaneo/runtime:/var/lib/kaneo
+    networks: [internal, coolify]
+    restart: unless-stopped
+    mem_limit: 768m
+    logging: *logging
+    depends_on:
+      postgres:
+        condition: service_healthy
+    labels:
+      traefik.enable: "true"
+      traefik.docker.network: coolify
+      traefik.http.services.kaneo-global.loadbalancer.server.port: "5173"
+networks:
+  internal:
+    internal: true
+  coolify:
+    external: true

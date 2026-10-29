@@ -1,0 +1,8 @@
+http:
+  routers:
+    kaneo-global-https:
+      entryPoints: [https]
+      rule: "Host(`kaneo.45.38.3.79.sslip.io`)"
+      service: kaneo-global@docker
+      tls:
+        certResolver: letsencrypt
