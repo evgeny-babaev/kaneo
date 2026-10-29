@@ -9,10 +9,10 @@ def main():
     issues=[i for f in m['issue_files'] for i in json.loads((source/f).read_text())]
     docs={d['id']:d for d in (json.loads(p.read_text()) for p in source.glob('document-*.json'))}
     for i in issues:i['documents']=[docs.get(d['id'],d) for d in i.get('documents') or []]
-    tables=['task','project','column','label','comment','task_relation','custom_field_value']
+    tables=['task','project','column','label','activity','task_relation','custom_field_value']
     pairs=','.join("'"+t+"',(SELECT coalesce(json_agg(t),'[]'::json) FROM \""+t+"\" t)" for t in tables)
     raw=subprocess.check_output(['docker','exec','kaneo-global-postgres-1','psql','-U','kaneo','-d','kaneo','-At','-c','SELECT json_build_object('+pairs+');'])
-    db=json.loads(raw);tasks={t['id']:t for t in db['task']};comments={c['id']:c for c in db['comment']}
+    db=json.loads(raw);tasks={t['id']:t for t in db['task']};comments={c['id']:c for c in db['activity'] if c['type']=='comment'}
     errors=[]
     def check(ok,message):
         if not ok:errors.append(message)
